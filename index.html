@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="打卡系統">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.json">
+<title>員工打卡系統</title>
+<style>
+  :root {
+    --green: #1D9E75;
+    --red: #D85A30;
+    --blue: #185FA5;
+    --amber: #BA7517;
+    --bg: #f5f5f5;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --text: #1a1a1a;
+    --text2: #666;
+    --text3: #999;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ヘッダー */
+  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-title { font-size: 17px; font-weight: 600; }
+  .header-user { font-size: 13px; color: var(--text2); }
+
+  /* ボトムナビ */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 100; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 0 8px; cursor: pointer; border: none; background: none; color: var(--text3); font-size: 10px; gap: 3px; }
+  .nav-item.active { color: var(--blue); }
+  .nav-icon { width: 24px; height: 24px; }
+
+  /* コンテンツ */
+  .content { padding: 16px; padding-bottom: calc(70px + env(safe-area-inset-bottom)); max-width: 480px; margin: 0 auto; }
+
+  /* カード */
+  .card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+
+  /* バッジ */
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+  .badge-office { background: #E6F1FB; color: #0C447C; }
+  .badge-home { background: #EAF3DE; color: #27500A; }
+  .badge-store { background: #FAEEDA; color: #633806; }
+  .badge-ok { background: #EAF3DE; color: #27500A; }
+  .badge-late { background: #FCEBEB; color: #791F1F; }
+  .badge-ot { background: #FAEEDA; color: #633806; }
+  .badge-pend { background: #FBEAF0; color: #72243E; }
+
+  /* 打刻画面 */
+  .clock-display { font-size: 48px; font-weight: 300; text-align: center; letter-spacing: -1px; margin: 8px 0 4px; }
+  .date-display { font-size: 13px; color: var(--text2); text-align: center; margin-bottom: 20px; }
+  .emp-info { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; flex-shrink: 0; }
+  .av-o { background: #EEEDFE; color: #3C3489; }
+  .av-s { background: #FAEEDA; color: #633806; }
+  .emp-name { font-size: 17px; font-weight: 600; }
+  .emp-rule { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  .loc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .loc-btn { padding: 10px 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; background: var(--card); color: var(--text); cursor: pointer; text-align: center; transition: all .15s; }
+  .loc-btn.sel { background: #E6F1FB; border-color: #185FA5; color: #0C447C; font-weight: 600; }
+
+  .punch-btn { width: 100%; padding: 16px; border-radius: var(--radius); border: none; font-size: 17px; font-weight: 600; cursor: pointer; margin-bottom: 10px; transition: opacity .15s; }
+  .punch-btn:active { opacity: .8; transform: scale(.98); }
+  .punch-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+  .btn-in { background: var(--green); color: #fff; }
+  .btn-break { background: var(--card); color: var(--text); border: 1px solid var(--border) !important; }
+  .btn-out { background: var(--red); color: #fff; }
+
+  .status-box { background: var(--bg); border-radius: var(--radius-sm); padding: 12px; font-size: 13px; color: var(--text2); text-align: center; margin-top: 4px; }
+  .status-box.ok { background: #EAF3DE; color: #27500A; }
+  .status-box.warn { background: #FCEBEB; color: #791F1F; }
+
+  /* 報告書 */
+  .report-card { border-radius: var(--radius-sm); padding: 14px; margin-top: 10px; }
+  .report-card.late { background: #FCEBEB; border-left: 3px solid #E24B4A; }
+  .report-card.ot { background: #FAEEDA; border-left: 3px solid #BA7517; }
+  .report-card label { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .report-card textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; background: #fff; color: var(--text); resize: none; min-height: 72px; }
+  .report-card button { margin-top: 8px; padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; color: var(--text); width: 100%; }
+  .report-card button:active { background: var(--bg); }
+
+  /* セクションタイトル */
+  .sec-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* リスト行 */
+  .list-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .list-row:last-child { border-bottom: none; }
+  .list-label { color: var(--text2); font-size: 13px; }
+  .list-val { font-weight: 500; }
+
+  /* メトリクス */
+  .metric-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+  .metric { background: var(--bg); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
+  .metric-num { font-size: 28px; font-weight: 600; }
+  .metric-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  /* テーブル */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 6px; color: var(--text2); font-weight: 600; border-bottom: 1px solid var(--border); font-size: 11px; white-space: nowrap; }
+  td { padding: 9px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+
+  /* アラート */
+  .alert-item { background: #FCEBEB; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; }
+  .alert-name { font-size: 14px; font-weight: 600; color: #791F1F; margin-bottom: 4px; }
+  .alert-desc { font-size: 12px; color: #A32D2D; margin-bottom: 8px; }
+  .alert-btn { font-size: 12px; padding: 6px 12px; border: 1px solid #E24B4A; border-radius: 6px; background: none; color: #791F1F; cursor: pointer; font-weight: 600; }
+
+  /* ログインページ */
+  .login-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+  .login-logo { font-size: 40px; margin-bottom: 12px; }
+  .login-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .login-sub { font-size: 14px; color: var(--text2); margin-bottom: 32px; }
+  .login-card { background: var(--card); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 340px; border: 1px solid var(--border); }
+  .login-label { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; }
+  .login-select { width: 100%; padding: 13px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 16px; background: var(--bg); color: var(--text); margin-bottom: 16px; font-family: inherit; }
+  .login-btn { width: 100%; padding: 15px; border-radius: var(--radius); border: none; background: var(--blue); color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; }
+  .login-btn:active { opacity: .85; }
+
+  /* スクリーン管理 */
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .hidden { display: none !important; }
+
+  /* アップロード */
+  .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px 16px; text-align: center; cursor: pointer; margin-bottom: 12px; }
+  .upload-zone:active { background: var(--bg); }
+  .upload-icon-wrap { width: 48px; height: 48px; background: var(--bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+  .upload-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .upload-sub { font-size: 12px; color: var(--text3); }
+  .success-box { background: #EAF3DE; border-radius: var(--radius-sm); padding: 12px; font-size: 13px; color: #27500A; font-weight: 600; text-align: center; margin-bottom: 12px; }
+  .rule-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .rule-item:last-child { border-bottom: none; }
+  .rule-time { font-size: 16px; font-weight: 700; white-space: nowrap; }
+  .rule-desc { font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+  /* カレンダー */
+  .cal-header { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px; }
+  .cal-hd { text-align: center; font-size: 10px; color: var(--text3); padding: 4px 0; font-weight: 600; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+  .cal-day { text-align: center; font-size: 12px; padding: 7px 2px; border-radius: 6px; font-weight: 500; }
+  .cal-day.work-o { background: #E6F1FB; color: #0C447C; }
+  .cal-day.work-s { background: #FAEEDA; color: #633806; }
+  .cal-day.off { color: var(--text3); font-weight: 400; }
+  .cal-day.today { outline: 2px solid var(--blue); }
+  .cal-day.empty { }
+  .cal-legend { display: flex; gap: 12px; font-size: 11px; margin-top: 10px; flex-wrap: wrap; }
+  .leg { display: flex; align-items: center; gap: 4px; }
+  .leg-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* 管理者モード識別 */
+  .admin-bar { background: #EEEDFE; padding: 8px 16px; font-size: 12px; color: #3C3489; font-weight: 600; text-align: center; }
+
+  /* スピナー */
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid #fff4; border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* トースト */
+  .toast { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- トースト通知 -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== ログイン画面 ===== -->
+<div id="screen-login" class="screen active">
+  <div class="login-wrap">
+    <div class="login-logo">🏢</div>
+    <div class="login-title">員工打卡系統</div>
+    <div class="login-sub">香港出勤管理</div>
+    <div class="login-card">
+      <label class="login-label">請選擇您的姓名</label>
+      <select class="login-select" id="login-emp-sel">
+        <option value="">-- 請選擇 --</option>
+        <option value="0">陳大文（辦公室）</option>
+        <option value="1">李小明（辦公室）</option>
+        <option value="2">張美玲（辦公室）</option>
+        <option value="3">王志強（店舖A）</option>
+        <option value="4">劉家豪（店舖A）</option>
+        <option value="5">黃麗珊（店舖B）</option>
+        <option value="6">林偉業（店舖B）</option>
+        <option value="7">鄭曉彤（店舖C）</option>
+        <option value="admin">管理員登入</option>
+      </select>
+      <button class="login-btn" onclick="doLogin()">登入</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== メインアプリ（社員用） ===== -->
+<div id="screen-main" class="screen">
+  <div class="header">
+    <span class="header-title">員工打卡系統</span>
+    <span class="header-user" id="header-user-name"></span>
+  </div>
+
+  <!-- コンテンツエリア -->
+  <div class="content">
+
+    <!-- 打卡タブ -->
+    <div id="tab-punch" class="tab-content">
+      <div class="card">
+        <div class="emp-info">
+          <div class="avatar" id="punch-avatar"></div>
+          <div>
+            <div class="emp-name" id="punch-name"></div>
+            <div class="emp-rule" id="punch-rule"></div>
+          </div>
+        </div>
+        <div class="clock-display" id="main-clock">00:00:00</div>
+        <div class="date-display" id="main-date"></div>
+
+        <div class="sec-title">工作地點</div>
+        <div class="loc-grid" id="loc-grid"></div>
+
+        <button class="punch-btn btn-in" id="main-btn-in" onclick="punchIn()">上班打卡</button>
+        <button class="punch-btn btn-break" id="main-btn-brk" onclick="punchBreak()" disabled>休息 開始 / 結束</button>
+        <button class="punch-btn btn-out" id="main-btn-out" onclick="punchOut()" disabled>下班打卡</button>
+
+        <div class="status-box" id="main-status">今日尚未打卡</div>
+      </div>
+
+      <div id="late-report-wrap" class="hidden">
+        <div class="report-card late">
+          <label>遲到報告書（遲到1分鐘或以上須填寫）</label>
+          <textarea id="late-reason" placeholder="請輸入遲到原因..."></textarea>
+          <button onclick="submitReport('late')">提交報告書</button>
+        </div>
+      </div>
+
+      <div id="ot-report-wrap" class="hidden">
+        <div class="report-card ot">
+          <label>超時工作報告書（超過下班時間30分鐘須填寫）</label>
+          <textarea id="ot-reason" placeholder="請輸入超時原因..."></textarea>
+          <button onclick="submitReport('ot')">提交報告書</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 個人記録タブ -->
+    <div id="tab-record" class="tab-content hidden">
+      <div class="card">
+        <div class="sec-title">本月出勤記錄</div>
+        <div class="tbl-wrap">
+          <table id="record-table">
+            <thead><tr>
+              <th>日期</th><th>地點</th><th>上班</th><th>下班</th><th>工時</th><th>狀態</th>
+            </tr></thead>
+            <tbody id="record-tbody">
+              <tr><td colspan="6" style="text-align:center;color:#999;padding:20px">載入中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-title">本月統計</div>
+        <div class="metric-row">
+          <div class="metric"><div class="metric-num" id="stat-days">—</div><div class="metric-lbl">出勤日數</div></div>
+          <div class="metric"><div class="metric-num" id="stat-hours">—</div><div class="metric-lbl">總工時（小時）</div></div>
+        </div>
+        <div class="metric-row">
+          <div class="metric"><div class="metric-num" id="stat-late" style="color:#D85A30">—</div><div class="metric-lbl">遲到次數</div></div>
+          <div class="metric"><div class="metric-num" id="stat-ot" style="color:#BA7517">—</div><div class="metric-lbl">超時次數</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 排班表タブ -->
+    <div id="tab-schedule" class="tab-content hidden">
+      <div class="card">
+        <div class="sec-title">本月排班</div>
+        <div class="cal-header" id="sch-hd"></div>
+        <div class="cal-grid" id="sch-grid"></div>
+        <div class="cal-legend">
+          <div class="leg"><div class="leg-dot" style="background:#378ADD"></div><span style="color:#185FA5">辦公室</span></div>
+          <div class="leg"><div class="leg-dot" style="background:#BA7517"></div><span style="color:#854F0B">店舖</span></div>
+          <div class="leg"><div class="leg-dot" style="background:#639922"></div><span style="color:#3B6D11">在家</span></div>
+          <div class="leg"><div class="leg-dot" style="background:#e0e0e0"></div><span style="color:#999">休假</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-title">出勤規則</div>
+        <div class="rule-item">
+          <span class="badge badge-office" style="margin-top:2px;flex-shrink:0">辦公室</span>
+          <div>
+            <div class="rule-time">08:30 – 17:30</div>
+            <div class="rule-desc">遲到1分鐘或以上須提交遲到報告書<br>超時30分鐘或以上須提交超時報告書</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <span class="badge badge-store" style="margin-top:2px;flex-shrink:0">外勤</span>
+          <div>
+            <div class="rule-time">11:00 – 20:00</div>
+            <div class="rule-desc">遲到1分鐘或以上須提交遲到報告書<br>超時30分鐘或以上須提交超時報告書</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <span class="badge badge-home" style="margin-top:2px;flex-shrink:0">在家</span>
+          <div>
+            <div class="rule-time">08:30 – 17:30</div>
+            <div class="rule-desc">沿用辦公室員工時間，打卡時選擇「在家工作」</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ボトムナビ（社員用） -->
+  <nav class="bottom-nav" id="emp-nav">
+    <button class="nav-item active" onclick="switchTab('punch',0)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      打卡
+    </button>
+    <button class="nav-item" onclick="switchTab('record',1)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      記錄
+    </button>
+    <button class="nav-item" onclick="switchTab('schedule',2)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      排班表
+    </button>
+    <button class="nav-item" onclick="doLogout()">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      登出
+    </button>
+  </nav>
+</div>
+
+<!-- ===== 管理者画面 ===== -->
+<div id="screen-admin" class="screen">
+  <div class="header">
+    <span class="header-title">管理員儀表板</span>
+    <span class="header-user" style="font-size:11px;color:#3C3489;font-weight:600">管理員</span>
+  </div>
+  <div class="admin-bar">管理員模式　— 可查閱所有員工資料</div>
+
+  <div class="content">
+
+    <!-- 管理者：今日概要 -->
+    <div id="admin-tab-today" class="tab-content">
+      <div class="metric-row">
+        <div class="metric"><div class="metric-num" style="color:#1D9E75" id="a-present">6</div><div class="metric-lbl">今日出勤</div></div>
+        <div class="metric"><div class="metric-num" style="color:#185FA5" id="a-home">2</div><div class="metric-lbl">在家工作</div></div>
+      </div>
+      <div class="metric-row">
+        <div class="metric"><div class="metric-num" style="color:#BA7517" id="a-absent">1</div><div class="metric-lbl">未打卡</div></div>
+        <div class="metric"><div class="metric-num" style="color:#D85A30" id="a-alert">2</div><div class="metric-lbl">待處理</div></div>
+      </div>
+      <div class="card">
+        <div class="sec-title">今日出勤一覽</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>員工</th><th>地點</th><th>上班</th><th>下班</th><th>狀態</th></tr></thead>
+            <tbody id="today-tbody">
+              <tr><td>陳大文</td><td><span class="badge badge-office">辦公室</span></td><td>09:02</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
+              <tr><td>李小明</td><td><span class="badge badge-home">在家</span></td><td>08:46</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
+              <tr><td>張美玲</td><td><span class="badge badge-home">在家</span></td><td>08:37</td><td>18:15</td><td><span class="badge badge-ot">超時已報</span></td></tr>
+              <tr><td>王志強</td><td><span class="badge badge-store">店舖A</span></td><td>11:00</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
+              <tr><td>劉家豪</td><td><span class="badge badge-store">店舖A</span></td><td>11:05</td><td>20:38</td><td><span class="badge badge-pend">超時未報</span></td></tr>
+              <tr><td>黃麗珊</td><td><span class="badge badge-store">店舖B</span></td><td>11:00</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
+              <tr><td>林偉業</td><td><span class="badge badge-store">店舖B</span></td><td>11:12</td><td>—</td><td><span class="badge badge-late">遲到12分</span></td></tr>
+              <tr><td>鄭曉彤</td><td>—</td><td style="color:#D85A30">未打卡</td><td>—</td><td><span class="badge badge-pend">待確認</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-title">待處理事項</div>
+        <div class="alert-item">
+          <div class="alert-name">林偉業</div>
+          <div class="alert-desc">遲到12分鐘（今日）— 遲到報告書未提交</div>
+          <button class="alert-btn" onclick="showToast('催促通知已發送')">發送催促通知</button>
+        </div>
+        <div class="alert-item">
+          <div class="alert-name">劉家豪</div>
+          <div class="alert-desc">超時38分鐘（今日）— 超時報告書未提交</div>
+          <button class="alert-btn" onclick="showToast('催促通知已發送')">發送催促通知</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 管理者：月次レポート -->
+    <div id="admin-tab-monthly" class="tab-content hidden">
+      <div class="card">
+        <div class="sec-title">月度考勤統計（2025年4月）</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>員工</th><th>出勤</th><th>遲到</th><th>超時</th><th>未報告</th></tr></thead>
+            <tbody>
+              <tr><td>陳大文</td><td>12日</td><td>0</td><td>1次</td><td>0</td></tr>
+              <tr><td>李小明</td><td>10日</td><td>2次</td><td>0</td><td>1</td></tr>
+              <tr><td>張美玲</td><td>12日</td><td>0</td><td>3次</td><td>0</td></tr>
+              <tr><td>王志強</td><td>12日</td><td>1次</td><td>2次</td><td>0</td></tr>
+              <tr><td>劉家豪</td><td>11日</td><td>0</td><td>2次</td><td>1</td></tr>
+              <tr><td>黃麗珊</td><td>10日</td><td>3次</td><td>1次</td><td>2</td></tr>
+              <tr><td>林偉業</td><td>12日</td><td>1次</td><td>3次</td><td>0</td></tr>
+              <tr><td>鄭曉彤</td><td>10日</td><td>1次</td><td>0</td><td>0</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 管理者：排班表アップロード -->
+    <div id="admin-tab-schedule" class="tab-content hidden">
+      <div class="card">
+        <div class="sec-title">上載下月排班表</div>
+        <div class="upload-zone" id="upload-zone" onclick="fakeUpload()">
+          <div class="upload-icon-wrap">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          </div>
+          <div class="upload-title">點擊上載排班表</div>
+          <div class="upload-sub">支援 .xlsx 及 .csv 格式</div>
+        </div>
+        <div class="success-box hidden" id="upload-success">已成功上載 2025年5月排班表 — 8名員工，共31天</div>
+        <input type="file" id="file-input" accept=".xlsx,.csv" style="display:none" onchange="handleFile(this)">
+      </div>
+      <div class="card">
+        <div class="sec-title">排班表格式說明</div>
+        <div class="list-row"><span class="list-label">第一欄</span><span class="list-val">員工姓名</span></div>
+        <div class="list-row"><span class="list-label">第二欄起</span><span class="list-val">各日期（O=辦公室 H=在家 S=店舖 X=休假）</span></div>
+        <div class="list-row"><span class="list-label">第一行</span><span class="list-val">日期（如：2025/5/1）</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ボトムナビ（管理者用） -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchAdminTab('today',0)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      今日概況
+    </button>
+    <button class="nav-item" onclick="switchAdminTab('monthly',1)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      月度報告
+    </button>
+    <button class="nav-item" onclick="switchAdminTab('schedule',2)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      排班表
+    </button>
+    <button class="nav-item" onclick="doLogout()">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      登出
+    </button>
+  </nav>
+</div>
+
+<script>
+// ===== 設定（ここを編集する） =====
+// Google Apps Script のデプロイURLに書き換えてください
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxJFx9UibOqbOxlo7rvU8weN35j_fe1ccGfoUGjvzSFc5U1OpKufMd3vMb2OW1UXYKarA/exec';
+
+const EMPS = [
+  {id:0, name:'陳大文', type:'office', store:null},
+  {id:1, name:'李小明', type:'office', store:null},
+  {id:2, name:'張美玲', type:'office', store:null},
+  {id:3, name:'王志強', type:'store', store:'A'},
+  {id:4, name:'劉家豪', type:'store', store:'A'},
+  {id:5, name:'黃麗珊', type:'store', store:'B'},
+  {id:6, name:'林偉業', type:'store', store:'B'},
+  {id:7, name:'鄭曉彤', type:'store', store:'C'},
+];
+
+const RULES = {
+  office: {start: 8*60+30, end: 17*60+30, label:'辦公室員工　08:30 – 17:30'},
+  store:  {start: 11*60,   end: 20*60,    label:'外勤員工　11:00 – 20:00'},
+};
+
+// ===== 状態管理 =====
+let currentEmp = null;
+let isAdmin = false;
+let punchState = {inTime:null, outTime:null, onBreak:false, breakStart:0, totalBreak:0, loc:null};
+let currentNavIndex = 0;
+let currentAdminIndex = 0;
+
+// ===== 時計 =====
+function pad(n){return String(n).padStart(2,'0');}
+function tickClock(){
+  const d=new Date();
+  const s=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  const cl=document.getElementById('main-clock');
+  if(cl) cl.textContent=s;
+}
+setInterval(tickClock,1000);
+tickClock();
+
+// ===== 日付 =====
+const WEEKDAYS=['日','一','二','三','四','五','六'];
+function formatDate(d){
+  return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（星期'+WEEKDAYS[d.getDay()]+'）';
+}
+const today = new Date();
+const el=document.getElementById('main-date');
+if(el) el.textContent=formatDate(today);
+
+// ===== ログイン =====
+function doLogin(){
+  const val=document.getElementById('login-emp-sel').value;
+  if(!val){showToast('請選擇員工');return;}
+  if(val==='admin'){
+    isAdmin=true;
+    showScreen('screen-admin');
+    return;
+  }
+  currentEmp=EMPS[parseInt(val)];
+  isAdmin=false;
+  setupPunchScreen();
+  showScreen('screen-main');
+}
+
+function doLogout(){
+  currentEmp=null;isAdmin=false;
+  punchState={inTime:null,outTime:null,onBreak:false,breakStart:0,totalBreak:0,loc:null};
+  document.getElementById('login-emp-sel').value='';
+  showScreen('screen-login');
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ===== 打刻画面セットアップ =====
+function setupPunchScreen(){
+  const e=currentEmp;
+  const r=RULES[e.type];
+  const av=document.getElementById('punch-avatar');
+  av.textContent=e.name[0];
+  av.className='avatar '+(e.type==='office'?'av-o':'av-s');
+  document.getElementById('punch-name').textContent=e.name;
+  document.getElementById('punch-rule').textContent=r.label;
+  document.getElementById('header-user-name').textContent=e.name;
+  document.getElementById('main-date').textContent=formatDate(today);
+
+  // 勤務場所ボタン
+  const locs=e.type==='office'
+    ?['辦公室','在家工作']
+    :['店舖A','店舖B','店舖C'];
+  const grid=document.getElementById('loc-grid');
+  grid.innerHTML='';
+  locs.forEach((l,i)=>{
+    const btn=document.createElement('button');
+    btn.className='loc-btn'+(i===0?' sel':'');
+    btn.textContent=l;
+    btn.onclick=()=>{
+      grid.querySelectorAll('.loc-btn').forEach(b=>b.classList.remove('sel'));
+      btn.classList.add('sel');
+      punchState.loc=l;
+    };
+    grid.appendChild(btn);
+  });
+  punchState.loc=locs[0];
+
+  // カレンダー
+  buildCalendar();
+}
+
+// ===== 打刻処理 =====
+function punchIn(){
+  const d=new Date();
+  const total=d.getHours()*60+d.getMinutes();
+  punchState.inTime={h:d.getHours(),m:d.getMinutes(),s:d.getSeconds(),total};
+  document.getElementById('main-btn-in').disabled=true;
+  document.getElementById('main-btn-brk').disabled=false;
+  document.getElementById('main-btn-out').disabled=false;
+
+  const r=RULES[currentEmp.type];
+  const lateMin=total-r.start;
+  const timeStr=pad(d.getHours())+':'+pad(d.getMinutes());
+  const sb=document.getElementById('main-status');
+
+  if(lateMin>1){
+    sb.className='status-box warn';
+    sb.textContent='上班打卡：'+timeStr+'　⚠ 遲到'+lateMin+'分鐘，請填寫報告書';
+    document.getElementById('late-report-wrap').classList.remove('hidden');
+  } else {
+    sb.className='status-box ok';
+    sb.textContent='上班打卡完成：'+timeStr+'　工作地點：'+punchState.loc;
+  }
+  saveToSheet('punchIn', {emp:currentEmp.name, time:timeStr, loc:punchState.loc, late:lateMin>1?lateMin:0});
+}
+
+function punchBreak(){
+  const d=new Date();
+  const total=d.getHours()*60+d.getMinutes();
+  if(!punchState.onBreak){
+    punchState.onBreak=true;punchState.breakStart=total;
+    showToast('休息開始：'+pad(d.getHours())+':'+pad(d.getMinutes()));
+  } else {
+    punchState.totalBreak+=total-punchState.breakStart;
+    punchState.onBreak=false;
+    showToast('休息結束　累計：'+punchState.totalBreak+'分鐘');
+  }
+}
+
+function punchOut(){
+  const d=new Date();
+  const total=d.getHours()*60+d.getMinutes();
+  punchState.outTime={h:d.getHours(),m:d.getMinutes(),total};
+  document.getElementById('main-btn-brk').disabled=true;
+  document.getElementById('main-btn-out').disabled=true;
+
+  const r=RULES[currentEmp.type];
+  const workMin=total-punchState.inTime.total-punchState.totalBreak;
+  const otMin=total-r.end;
+  const timeStr=pad(d.getHours())+':'+pad(d.getMinutes());
+  const sb=document.getElementById('main-status');
+
+  if(otMin>30){
+    sb.className='status-box warn';
+    sb.textContent='下班打卡：'+timeStr+'　⚠ 超時'+otMin+'分鐘，請填寫報告書';
+    document.getElementById('ot-report-wrap').classList.remove('hidden');
+  } else {
+    sb.className='status-box ok';
+    sb.textContent='下班打卡完成：'+timeStr+'　實際工時：'+Math.floor(workMin/60)+'時'+workMin%60+'分';
+  }
+  saveToSheet('punchOut', {emp:currentEmp.name, time:timeStr, workMin, ot:otMin>30?otMin:0});
+}
+
+function submitReport(type){
+  const id=type==='late'?'late-reason':'ot-reason';
+  const val=document.getElementById(id).value.trim();
+  if(!val){showToast('請輸入原因');return;}
+  const wrap=document.getElementById(type==='late'?'late-report-wrap':'ot-report-wrap');
+  wrap.innerHTML='<div style="background:#EAF3DE;border-radius:8px;padding:12px;font-size:13px;color:#27500A;font-weight:600;text-align:center;margin-top:8px">報告書已提交，管理員將收到通知。</div>';
+  saveToSheet('report', {emp:currentEmp.name, type, reason:val});
+}
+
+// ===== Google Sheets 送信 =====
+async function saveToSheet(action, data){
+  try {
+    await fetch(GAS_URL, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action, date:today.toISOString().split('T')[0], ...data})
+    });
+  } catch(e){
+    // オフライン時はローカルキューに保存（後で同期）
+    const queue=JSON.parse(localStorage.getItem('offlineQueue')||'[]');
+    queue.push({action, date:today.toISOString().split('T')[0], ...data, ts:Date.now()});
+    localStorage.setItem('offlineQueue', JSON.stringify(queue));
+  }
+}
+
+// ===== タブ切替 =====
+function switchTab(name, idx){
+  document.querySelectorAll('.tab-content').forEach(t=>{
+    if(['tab-punch','tab-record','tab-schedule'].includes(t.id))
+      t.classList.add('hidden');
+  });
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  document.querySelectorAll('#emp-nav .nav-item').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  if(name==='record') loadMyRecord();
+}
+
+function switchAdminTab(name, idx){
+  document.querySelectorAll('.tab-content').forEach(t=>{
+    if(['admin-tab-today','admin-tab-monthly','admin-tab-schedule'].includes(t.id))
+      t.classList.add('hidden');
+  });
+  document.getElementById('admin-tab-'+name).classList.remove('hidden');
+  document.querySelectorAll('#screen-admin .nav-item').forEach((b,i)=>b.classList.toggle('active',i===idx));
+}
+
+// ===== 個人記録（ダミーデータ） =====
+function loadMyRecord(){
+  const rows=[
+    ['4/14','辦公室','08:31','17:35','9時04分','<span class="badge badge-ok">正常</span>'],
+    ['4/13','在家工作','08:28','17:30','9時02分','<span class="badge badge-ok">正常</span>'],
+    ['4/12','辦公室','08:45','18:10','9時25分','<span class="badge badge-late">遲到15分</span>'],
+    ['4/11','辦公室','08:30','17:30','9時00分','<span class="badge badge-ok">正常</span>'],
+    ['4/10','在家工作','08:32','17:30','8時58分','<span class="badge badge-ok">正常</span>'],
+  ];
+  const tb=document.getElementById('record-tbody');
+  tb.innerHTML=rows.map(r=>'<tr>'+r.map((c,i)=>'<td>'+c+'</td>').join('')+'</tr>').join('');
+  document.getElementById('stat-days').textContent='12';
+  document.getElementById('stat-hours').textContent='108';
+  document.getElementById('stat-late').textContent='2';
+  document.getElementById('stat-ot').textContent='1';
+}
+
+// ===== カレンダー =====
+function buildCalendar(){
+  const hd=document.getElementById('sch-hd');
+  const grid=document.getElementById('sch-grid');
+  if(!hd||!grid) return;
+  hd.innerHTML='';grid.innerHTML='';
+  WEEKDAYS.forEach(d=>{const el=document.createElement('div');el.className='cal-hd';el.textContent=d;hd.appendChild(el);});
+  const y=today.getFullYear(),m=today.getMonth();
+  const firstDay=new Date(y,m,1).getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  for(let i=0;i<firstDay;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
+  const e=currentEmp;
+  for(let d=1;d<=daysInMonth;d++){
+    const el=document.createElement('div');
+    const dow=new Date(y,m,d).getDay();
+    if(dow===0||dow===6){el.className='cal-day off';}
+    else if(e.type==='store'){el.className='cal-day work-s';}
+    else if(d%4===0){el.className='cal-day work-o';} // 在家
+    else{el.className='cal-day work-o';}
+    if(d===today.getDate()) el.classList.add('today');
+    el.textContent=d;
+    grid.appendChild(el);
+  }
+}
+
+// ===== ファイルアップロード =====
+function fakeUpload(){document.getElementById('file-input').click();}
+function handleFile(input){
+  if(!input.files.length) return;
+  document.getElementById('upload-success').classList.remove('hidden');
+  document.getElementById('upload-zone').style.opacity='0.5';
+  showToast('排班表上載成功');
+}
+
+// ===== トースト =====
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+
+<!-- PWA Service Worker 登録 -->
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
