@@ -549,23 +549,45 @@ function setupPunchScreen(){
   document.getElementById('main-date').textContent=formatDate(today);
 
   // 勤務場所ボタン
-  const locs=e.type==='office'
-    ?['辦公室','在家工作']
-    :['店舖A','店舖B','店舖C'];
   const grid=document.getElementById('loc-grid');
   grid.innerHTML='';
-  locs.forEach((l,i)=>{
-    const btn=document.createElement('button');
-    btn.className='loc-btn'+(i===0?' sel':'');
-    btn.textContent=l;
-    btn.onclick=()=>{
-      grid.querySelectorAll('.loc-btn').forEach(b=>b.classList.remove('sel'));
-      btn.classList.add('sel');
-      punchState.loc=l;
-    };
-    grid.appendChild(btn);
-  });
-  punchState.loc=locs[0];
+
+  if(e.type==='office'){
+    // オフィス社員：辦公室・在家工作のみボタン
+    ['辦公室','在家工作'].forEach((l,i)=>{
+      const btn=document.createElement('button');
+      btn.className='loc-btn'+(i===0?' sel':'');
+      btn.textContent=l;
+      btn.onclick=()=>{
+        grid.querySelectorAll('.loc-btn').forEach(b=>b.classList.remove('sel'));
+        btn.classList.add('sel');
+        punchState.loc=l;
+      };
+      grid.appendChild(btn);
+    });
+    punchState.loc='辦公室';
+  } else {
+    // 店舗社員：FS01・MK01・1001・1002・1009・其他
+    const storeLocs=['FS01','MK01','1001','1002','1009','其他'];
+    storeLocs.forEach((l,i)=>{
+      const btn=document.createElement('button');
+      btn.className='loc-btn'+(i===0?' sel':'');
+      btn.textContent=l;
+      btn.onclick=()=>{
+        grid.querySelectorAll('.loc-btn').forEach(b=>b.classList.remove('sel'));
+        btn.classList.add('sel');
+        if(l==='其他'){
+          const code=prompt('請輸入店舖代碼：');
+          if(code && code.trim()) punchState.loc=code.trim();
+          else punchState.loc='其他';
+        } else {
+          punchState.loc=l;
+        }
+      };
+      grid.appendChild(btn);
+    });
+    punchState.loc='FS01';
+  }
 
   // カレンダー
   buildCalendar();
