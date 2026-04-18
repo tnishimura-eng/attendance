@@ -186,13 +186,13 @@
       <label class="login-label">請選擇您的姓名</label>
       <select class="login-select" id="login-emp-sel">
         <option value="">-- 請選擇 --</option>
-        <option value="0">西村拓也（辦公室）</option>
-        <option value="1">馬姍妮（辦公室）</option>
+        <option value="0">Nishimura Takuya（辦公室）</option>
+        <option value="1">Ma Shanni（辦公室）</option>
         <option value="2">Law Kayan（辦公室）</option>
         <option value="3">Ng Sinhang（店舖A）</option>
         <option value="4">Ng Yuenchong（店舖A）</option>
-        <option value="5">Li Laiman（店舖B）</option>
-        <option value="6">Ku Heiyi（店舖B）</option>
+        <option value="5">Ku Heiyi（店舖B）</option>
+        <option value="6">Li Laiman（店舖B）</option>
         <option value="7">Lo Hoiyu（店舖C）</option>
         <option value="admin">管理員登入</option>
       </select>
@@ -367,14 +367,14 @@
           <table>
             <thead><tr><th>員工</th><th>地點</th><th>上班</th><th>下班</th><th>狀態</th></tr></thead>
             <tbody id="today-tbody">
-              <tr><td>陳大文</td><td><span class="badge badge-office">辦公室</span></td><td>09:02</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
-              <tr><td>李小明</td><td><span class="badge badge-home">在家</span></td><td>08:46</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
-              <tr><td>張美玲</td><td><span class="badge badge-home">在家</span></td><td>08:37</td><td>18:15</td><td><span class="badge badge-ot">超時已報</span></td></tr>
-              <tr><td>王志強</td><td><span class="badge badge-store">店舖A</span></td><td>11:00</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
-              <tr><td>劉家豪</td><td><span class="badge badge-store">店舖A</span></td><td>11:05</td><td>20:38</td><td><span class="badge badge-pend">超時未報</span></td></tr>
-              <tr><td>黃麗珊</td><td><span class="badge badge-store">店舖B</span></td><td>11:00</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
-              <tr><td>林偉業</td><td><span class="badge badge-store">店舖B</span></td><td>11:12</td><td>—</td><td><span class="badge badge-late">遲到12分</span></td></tr>
-              <tr><td>鄭曉彤</td><td>—</td><td style="color:#D85A30">未打卡</td><td>—</td><td><span class="badge badge-pend">待確認</span></td></tr>
+              <tr><td>Nishimura Takuya</td><td><span class="badge badge-office">辦公室</span></td><td>09:02</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
+              <tr><td>Ma Shanni</td><td><span class="badge badge-home">在家</span></td><td>08:46</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
+              <tr><td>Law Kayan</td><td><span class="badge badge-home">在家</span></td><td>08:37</td><td>18:15</td><td><span class="badge badge-ot">超時已報</span></td></tr>
+              <tr><td>Ng Sinhang</td><td><span class="badge badge-store">店舖A</span></td><td>11:00</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
+              <tr><td>Ng Yuenchong</td><td><span class="badge badge-store">店舖A</span></td><td>11:05</td><td>20:38</td><td><span class="badge badge-pend">超時未報</span></td></tr>
+              <tr><td>Ku Heiyi</td><td><span class="badge badge-store">店舖B</span></td><td>11:00</td><td>—</td><td><span class="badge badge-ok">正常</span></td></tr>
+              <tr><td>Li Laiman</td><td><span class="badge badge-store">店舖B</span></td><td>11:12</td><td>—</td><td><span class="badge badge-late">遲到12分</span></td></tr>
+              <tr><td>Lo Hoiyu</td><td>—</td><td style="color:#D85A30">未打卡</td><td>—</td><td><span class="badge badge-pend">待確認</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -382,12 +382,12 @@
       <div class="card">
         <div class="sec-title">待處理事項</div>
         <div class="alert-item">
-          <div class="alert-name">林偉業</div>
+          <div class="alert-name">Li Laiman</div>
           <div class="alert-desc">遲到12分鐘（今日）— 遲到報告書未提交</div>
           <button class="alert-btn" onclick="showToast('催促通知已發送')">發送催促通知</button>
         </div>
         <div class="alert-item">
-          <div class="alert-name">劉家豪</div>
+          <div class="alert-name">Ng Yuenchong</div>
           <div class="alert-desc">超時38分鐘（今日）— 超時報告書未提交</div>
           <button class="alert-btn" onclick="showToast('催促通知已發送')">發送催促通知</button>
         </div>
@@ -402,14 +402,14 @@
           <table>
             <thead><tr><th>員工</th><th>出勤</th><th>遲到</th><th>超時</th><th>未報告</th></tr></thead>
             <tbody>
-              <tr><td>陳大文</td><td>12日</td><td>0</td><td>1次</td><td>0</td></tr>
-              <tr><td>李小明</td><td>10日</td><td>2次</td><td>0</td><td>1</td></tr>
-              <tr><td>張美玲</td><td>12日</td><td>0</td><td>3次</td><td>0</td></tr>
-              <tr><td>王志強</td><td>12日</td><td>1次</td><td>2次</td><td>0</td></tr>
-              <tr><td>劉家豪</td><td>11日</td><td>0</td><td>2次</td><td>1</td></tr>
-              <tr><td>黃麗珊</td><td>10日</td><td>3次</td><td>1次</td><td>2</td></tr>
-              <tr><td>林偉業</td><td>12日</td><td>1次</td><td>3次</td><td>0</td></tr>
-              <tr><td>鄭曉彤</td><td>10日</td><td>1次</td><td>0</td><td>0</td></tr>
+              <tr><td>Nishimura Takuya</td><td>12日</td><td>0</td><td>1次</td><td>0</td></tr>
+              <tr><td>Ma Shanni</td><td>10日</td><td>2次</td><td>0</td><td>1</td></tr>
+              <tr><td>Law Kayan</td><td>12日</td><td>0</td><td>3次</td><td>0</td></tr>
+              <tr><td>Ng Sinhang</td><td>12日</td><td>1次</td><td>2次</td><td>0</td></tr>
+              <tr><td>Ng Yuenchong</td><td>11日</td><td>0</td><td>2次</td><td>1</td></tr>
+              <tr><td>Ku Heiyi</td><td>10日</td><td>3次</td><td>1次</td><td>2</td></tr>
+              <tr><td>Li Laiman</td><td>12日</td><td>1次</td><td>3次</td><td>0</td></tr>
+              <tr><td>Lo Hoiyu</td><td>10日</td><td>1次</td><td>0</td><td>0</td></tr>
             </tbody>
           </table>
         </div>
@@ -467,13 +467,13 @@
 const GAS_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
 
 const EMPS = [
-  {id:0, name:'西村拓也', type:'office', store:null},
-  {id:1, name:'馬姍妮', type:'office', store:null},
+  {id:0, name:'Nishimura Takuya', type:'office', store:null},
+  {id:1, name:'Ma Shanni', type:'office', store:null},
   {id:2, name:'Law Kayan', type:'office', store:null},
   {id:3, name:'Ng Sinhang', type:'store', store:'A'},
   {id:4, name:'Ng Yuenchong', type:'store', store:'A'},
-  {id:5, name:'Li Laiman', type:'store', store:'B'},
-  {id:6, name:'Ku Heiyi', type:'store', store:'B'},
+  {id:5, name:'Ku Heiyi', type:'store', store:'B'},
+  {id:6, name:'Li Laiman', type:'store', store:'B'},
   {id:7, name:'Lo Hoiyu', type:'store', store:'C'},
 ];
 
