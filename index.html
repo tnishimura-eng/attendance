@@ -183,20 +183,23 @@
     <div class="login-title">員工打卡系統</div>
     <div class="login-sub">香港出勤管理</div>
     <div class="login-card">
-      <label class="login-label">請選擇您的姓名</label>
+      <label class="login-label">姓名</label>
       <select class="login-select" id="login-emp-sel">
         <option value="">-- 請選擇 --</option>
-        <option value="0">Nishimura Takuya（辦公室）</option>
-        <option value="1">Ma Shanni（辦公室）</option>
-        <option value="2">Law Kayan（辦公室）</option>
-        <option value="3">Ng Sinhang（店舖A）</option>
-        <option value="4">Ng Yuenchong（店舖A）</option>
-        <option value="5">Ku Heiyi（店舖B）</option>
-        <option value="6">Li Laiman（店舖B）</option>
-        <option value="7">Lo Hoiyu（店舖C）</option>
-        <option value="admin">管理員登入</option>
+        <option value="Nishimura Takuya">Nishimura Takuya（辦公室）</option>
+        <option value="Ma Shanni">Ma Shanni（辦公室）</option>
+        <option value="Law Kayan">Law Kayan（辦公室）</option>
+        <option value="Ng Sinhang">Ng Sinhang（店舖）</option>
+        <option value="Ng Yuenchong">Ng Yuenchong（店舖）</option>
+        <option value="Ku Heiyi">Ku Heiyi（店舖）</option>
+        <option value="Li Laiman">Li Laiman（店舖）</option>
+        <option value="Lo Hoiyu">Lo Hoiyu（店舖）</option>
+        <option value="admin">管理員</option>
       </select>
-      <button class="login-btn" onclick="doLogin()">登入</button>
+      <label class="login-label" style="margin-top:12px">密碼</label>
+      <input type="password" id="login-pass" class="login-select" placeholder="請輸入密碼" style="margin-bottom:16px">
+      <div id="login-error" style="color:#D85A30;font-size:13px;text-align:center;margin-bottom:10px;display:none">姓名或密碼錯誤，請重試</div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">登入</button>
     </div>
   </div>
 </div>
@@ -477,6 +480,8 @@ const EMPS = [
   {id:7, name:'Lo Hoiyu', type:'store', store:'C'},
 ];
 
+// パスワードリセット用（ログアウト時にフォームクリア）
+
 const RULES = {
   office: {start: 8*60+30, end: 17*60+30, label:'辦公室員工　08:30 – 17:30'},
   store:  {start: 11*60,   end: 20*60,    label:'外勤員工　11:00 – 20:00'},
@@ -509,25 +514,52 @@ const today = new Date();
 const el=document.getElementById('main-date');
 if(el) el.textContent=formatDate(today);
 
-// ===== ログイン =====
-function doLogin(){
-  const val=document.getElementById('login-emp-sel').value;
-  if(!val){showToast('請選擇員工');return;}
-  if(val==='admin'){
-    isAdmin=true;
-    showScreen('screen-admin');
-    return;
+// ===== ログイン（GAS認証） =====
+async function doLogin(){
+  const empName=document.getElementById('login-emp-sel').value;
+  const pass=document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+
+  if(!empName){showToast('請選擇姓名');return;}
+  if(!pass){showToast('請輸入密碼');return;}
+
+  errEl.style.display='none';
+  btn.textContent='驗證中...';
+  btn.disabled=true;
+
+  try {
+    const res=await fetch(GAS_URL+'?action=login&emp='+encodeURIComponent(empName)+'&pass='+encodeURIComponent(pass));
+    const json=await res.json();
+
+    if(json.status==='ok'){
+      if(json.role==='admin'){
+        isAdmin=true;
+        showScreen('screen-admin');
+      } else {
+        // 社員名からEMPSを検索
+        currentEmp=EMPS.find(e=>e.name===empName);
+        isAdmin=false;
+        setupPunchScreen();
+        showScreen('screen-main');
+      }
+    } else {
+      errEl.style.display='block';
+    }
+  } catch(e) {
+    showToast('通訊錯誤，請重試');
   }
-  currentEmp=EMPS[parseInt(val)];
-  isAdmin=false;
-  setupPunchScreen();
-  showScreen('screen-main');
+
+  btn.textContent='登入';
+  btn.disabled=false;
 }
 
 function doLogout(){
   currentEmp=null;isAdmin=false;
   punchState={inTime:null,outTime:null,onBreak:false,breakStart:0,totalBreak:0,loc:null};
   document.getElementById('login-emp-sel').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').style.display='none';
   showScreen('screen-login');
 }
 
