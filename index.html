@@ -464,7 +464,7 @@
 <script>
 // ===== 設定（ここを編集する） =====
 // Google Apps Script のデプロイURLに書き換えてください
-const GAS_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxJFx9UibOqbOxlo7rvU8weN35j_fe1ccGfoUGjvzSFc5U1OpKufMd3vMb2OW1UXYKarA/exec';
 
 const EMPS = [
   {id:0, name:'Nishimura Takuya', type:'office', store:null},
@@ -738,13 +738,7 @@ async function buildCalendar(){
     const json=await res.json();
     if(json.schedule){
       json.schedule.forEach(item=>{
-        // 日付から日を取得
-        const dateStr=item.date.toString();
-        const parts=dateStr.split('/');
-        if(parts.length>=3){
-          const day=parseInt(parts[2]);
-          scheduleMap[day]=item.status;
-        }
+        if(item.day) scheduleMap[item.day]=item.status;
       });
     }
   }catch(e){
