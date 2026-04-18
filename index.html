@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="打卡系統">
 <meta name="theme-color" content="#ffffff">
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>員工打卡系統</title>
 <style>
   :root {
@@ -184,14 +185,15 @@
     <div class="login-card">
       <label class="login-label">請選擇您的姓名</label>
       <select class="login-select" id="login-emp-sel">
-        <option value="0">Nishimura Takuya（辦公室）</option>
-<option value="1">Ma Shanni（辦公室）</option>
-<option value="2">Law Kayan（辦公室）</option>
-<option value="3">Ng Sinhang（店舖A）</option>
-<option value="4">Ng Yuenchong（店舖A）</option>
-<option value="5">Ku Heiyi（店舖B）</option>
-<option value="6">Li Laiman（店舖B）</option>
-<option value="7">Lo Hoiyu（店舖C）</option>
+        <option value="">-- 請選擇 --</option>
+        <option value="0">陳大文（辦公室）</option>
+        <option value="1">李小明（辦公室）</option>
+        <option value="2">張美玲（辦公室）</option>
+        <option value="3">王志強（店舖A）</option>
+        <option value="4">劉家豪（店舖A）</option>
+        <option value="5">黃麗珊（店舖B）</option>
+        <option value="6">林偉業（店舖B）</option>
+        <option value="7">鄭曉彤（店舖C）</option>
         <option value="admin">管理員登入</option>
       </select>
       <button class="login-btn" onclick="doLogin()">登入</button>
@@ -462,17 +464,17 @@
 <script>
 // ===== 設定（ここを編集する） =====
 // Google Apps Script のデプロイURLに書き換えてください
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxJFx9UibOqbOxlo7rvU8weN35j_fe1ccGfoUGjvzSFc5U1OpKufMd3vMb2OW1UXYKarA/exec';
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
 
 const EMPS = [
-  {id:0, name:'Nishimura Takuya', type:'office', store:null},
-{id:1, name:'Ma Shanni', type:'office', store:null},
-{id:2, name:'Law Kayan', type:'office', store:null},
-{id:3, name:'Ng Sinhang', type:'store', store:'A'},
-{id:4, name:'Ng Yuenchong', type:'store', store:'A'},
-{id:5, name:'Ku Heiyi', type:'store', store:'B'},
-{id:6, name:'Li Laiman', type:'store', store:'B'},
-{id:7, name:'Lo Hoiyu', type:'store', store:'C'},
+  {id:0, name:'陳大文', type:'office', store:null},
+  {id:1, name:'李小明', type:'office', store:null},
+  {id:2, name:'張美玲', type:'office', store:null},
+  {id:3, name:'王志強', type:'store', store:'A'},
+  {id:4, name:'劉家豪', type:'store', store:'A'},
+  {id:5, name:'黃麗珊', type:'store', store:'B'},
+  {id:6, name:'林偉業', type:'store', store:'B'},
+  {id:7, name:'鄭曉彤', type:'store', store:'C'},
 ];
 
 const RULES = {
@@ -719,13 +721,56 @@ function buildCalendar(){
   }
 }
 
-// ===== ファイルアップロード =====
+// ===== ファイルアップロード → Googleスプレッドシートに保存 =====
 function fakeUpload(){document.getElementById('file-input').click();}
 function handleFile(input){
   if(!input.files.length) return;
-  document.getElementById('upload-success').classList.remove('hidden');
-  document.getElementById('upload-zone').style.opacity='0.5';
-  showToast('排班表上載成功');
+  const file = input.files[0];
+  const reader = new FileReader();
+
+  reader.onload = async function(e){
+    let csvText = '';
+    if(file.name.endsWith('.csv')){
+      csvText = e.target.result;
+    } else {
+      // xlsxの場合はSheetJSで読み込む
+      showToast('讀取Excel中...');
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type:'array'});
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        csvText = XLSX.utils.sheet_to_csv(sheet);
+      } catch(err) {
+        showToast('讀取失敗，請使用CSV格式');
+        return;
+      }
+    }
+    await uploadScheduleToSheet(csvText, file.name);
+  };
+
+  if(file.name.endsWith('.csv')){
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+async function uploadScheduleToSheet(csvText, fileName){
+  showToast('上載中...');
+  try {
+    await fetch(GAS_URL, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'uploadSchedule', csv:csvText})
+    });
+    document.getElementById('upload-success').textContent = '已成功上載 ' + fileName + ' 至Google試算表';
+    document.getElementById('upload-success').classList.remove('hidden');
+    document.getElementById('upload-zone').style.opacity='0.5';
+    showToast('排班表上載成功');
+  } catch(err) {
+    showToast('上載失敗，請重試');
+  }
 }
 
 // ===== トースト =====
@@ -738,10 +783,14 @@ function showToast(msg){
 }
 </script>
 
-<!-- PWA Service Worker 登録 -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js', {scope: './'})
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW error:', err));
+  });
 }
 </script>
 </body>
