@@ -184,7 +184,7 @@
     <div class="login-sub">香港出勤管理</div>
     <div class="login-card">
       <label class="login-label">姓名</label>
-      <select class="login-select" id="login-emp-sel">
+      <select class="login-select" id="login-emp-sel" autocomplete="username">
         <option value="">-- 請選擇 --</option>
         <option value="Nishimura Takuya">Nishimura Takuya（辦公室）</option>
         <option value="Ma Shanni">Ma Shanni（辦公室）</option>
@@ -197,7 +197,13 @@
         <option value="admin">管理員</option>
       </select>
       <label class="login-label" style="margin-top:12px">密碼</label>
-      <input type="password" id="login-pass" class="login-select" placeholder="請輸入密碼" style="margin-bottom:16px">
+      <input type="password" id="login-pass" class="login-select" placeholder="請輸入密碼" style="margin-bottom:8px" autocomplete="current-password">
+      <div style="text-align:right;margin-bottom:12px">
+        <label style="font-size:12px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <input type="checkbox" id="remember-me" style="width:14px;height:14px">
+          記住我（下次自動登入）
+        </label>
+      </div>
       <div id="login-error" style="color:#D85A30;font-size:13px;text-align:center;margin-bottom:10px;display:none">姓名或密碼錯誤，請重試</div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">登入</button>
     </div>
@@ -233,8 +239,19 @@
         <button class="punch-btn btn-in" id="main-btn-in" onclick="punchIn()">上班打卡</button>
         <button class="punch-btn btn-break" id="main-btn-brk" onclick="punchBreak()" disabled>休息 開始 / 結束</button>
         <button class="punch-btn btn-out" id="main-btn-out" onclick="punchOut()" disabled>下班打卡</button>
+        <button class="punch-btn" id="main-btn-ot" onclick="showOtApply()" disabled style="background:#7C3AED;color:#fff">殘業申請</button>
 
         <div class="status-box" id="main-status">今日尚未打卡</div>
+
+        <!-- 残業申請ボタン -->
+        <div id="ot-apply-btn-wrap" class="hidden" style="margin-top:8px">
+          <button id="ot-apply-btn" onclick="showOtApply()" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid #185FA5;background:#EFF6FF;color:#185FA5;font-size:14px;font-weight:600;cursor:pointer">
+            超時申請（申請後自動退勤不啟動）
+          </button>
+          <div id="ot-apply-done" class="hidden" style="background:#EFF6FF;border-radius:8px;padding:10px;font-size:13px;color:#185FA5;font-weight:600;text-align:center;margin-top:4px">
+            ✓ 超時申請已提交　自動退勤不會啟動
+          </div>
+        </div>
       </div>
 
       <div id="late-report-wrap" class="hidden">
@@ -245,11 +262,38 @@
         </div>
       </div>
 
-      <div id="ot-report-wrap" class="hidden">
+      <!-- 下班遅延理由（規定時間後・残業未承認の場合） -->
+      <div id="late-out-wrap" class="hidden">
+        <div class="report-card ot" style="border-left-color:#DC2626;background:#FEF2F2">
+          <label style="color:#DC2626">⚠ 下班遲到原因（必填）</label>
+          <div style="font-size:11px;color:#991B1B;margin-bottom:8px">已超過規定下班時間，請填寫原因。填寫後方可完成下班打卡。</div>
+          <textarea id="late-out-reason" placeholder="請輸入遲下班的原因（例：工作未完成、客人要求等）..." style="border-color:#FCA5A5"></textarea>
+          <button onclick="submitLateOutReason()" style="background:#DC2626;color:#fff;border:none;border-radius:8px;padding:10px;width:100%;font-size:13px;font-weight:600;margin-top:8px;cursor:pointer">確認並完成下班打卡</button>
+        </div>
+      </div>
+
+      <!-- 殘業申請 -->
+      <div id="ot-apply-wrap" class="hidden">
         <div class="report-card ot">
-          <label>超時工作報告書（超過下班時間30分鐘須填寫）</label>
-          <textarea id="ot-reason" placeholder="請輸入超時原因..."></textarea>
-          <button onclick="submitReport('ot')">提交報告書</button>
+          <label>殘業申請（請在下班前提交，管理員將收到通知）</label>
+          <textarea id="ot-apply-reason" placeholder="請輸入殘業原因及預計完成時間..."></textarea>
+          <button onclick="submitOtApply()">提交殘業申請</button>
+        </div>
+      </div>
+
+      <!-- 残業申請 -->
+      <div id="ot-apply-wrap" class="hidden">
+        <div class="report-card" style="background:#EFF6FF;border-left:3px solid #185FA5">
+          <label style="color:#1E3A5F">超時申請（申請後自動退勤將不會啟動）</label>
+          <div style="font-size:12px;color:#64748B;margin-bottom:10px">請填寫預計退勤時間及超時原因，自行按下班打卡。</div>
+          <div style="margin-bottom:8px">
+            <label style="font-size:12px;color:#475569;display:block;margin-bottom:4px;font-weight:600">預計退勤時間</label>
+            <input type="time" id="ot-apply-time" style="width:100%;padding:8px;border:1px solid #CBD5E1;border-radius:8px;font-size:14px;background:#fff;color:#1E293B">
+          </div>
+          <label style="font-size:12px;color:#475569;display:block;margin-bottom:4px;font-weight:600">超時原因</label>
+          <textarea id="ot-apply-reason" placeholder="例：上班遲到15分鐘，補回工時後才下班..." style="border-color:#CBD5E1"></textarea>
+          <button onclick="submitOtApply()" style="background:#185FA5;color:#fff;border:none;border-radius:8px;padding:10px;width:100%;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px">提交超時申請</button>
+          <button onclick="cancelOtApply()" style="background:none;color:#64748B;border:1px solid #CBD5E1;border-radius:8px;padding:8px;width:100%;font-size:12px;cursor:pointer;margin-top:6px">取消</button>
         </div>
       </div>
     </div>
@@ -490,7 +534,7 @@ const RULES = {
 // ===== 状態管理 =====
 let currentEmp = null;
 let isAdmin = false;
-let punchState = {inTime:null, outTime:null, onBreak:false, breakStart:0, totalBreak:0, loc:null};
+let punchState = {inTime:null, outTime:null, onBreak:false, breakStart:0, totalBreak:0, loc:null, otApproved:false, lateOutReason:''};
 let currentNavIndex = 0;
 let currentAdminIndex = 0;
 
@@ -514,10 +558,26 @@ const today = new Date();
 const el=document.getElementById('main-date');
 if(el) el.textContent=formatDate(today);
 
-// ===== ログイン（GAS認証） =====
+// ===== ログイン（GAS認証）=====
+// ページ読み込み時に保存済み情報を復元
+window.addEventListener('load', function(){
+  const saved = localStorage.getItem('bhk_login');
+  if(saved){
+    try{
+      const d = JSON.parse(saved);
+      document.getElementById('login-emp-sel').value = d.emp || '';
+      document.getElementById('login-pass').value = d.pass || '';
+      document.getElementById('remember-me').checked = true;
+      // 自動ログイン
+      setTimeout(()=>doLogin(), 300);
+    }catch(e){}
+  }
+});
+
 async function doLogin(){
   const empName=document.getElementById('login-emp-sel').value;
   const pass=document.getElementById('login-pass').value;
+  const remember=document.getElementById('remember-me').checked;
   const errEl=document.getElementById('login-error');
   const btn=document.getElementById('login-btn');
 
@@ -533,11 +593,17 @@ async function doLogin(){
     const json=await res.json();
 
     if(json.status==='ok'){
+      // 記憶チェックボックスがオンの場合は保存
+      if(remember){
+        localStorage.setItem('bhk_login', JSON.stringify({emp:empName, pass:pass}));
+      } else {
+        localStorage.removeItem('bhk_login');
+      }
+
       if(json.role==='admin'){
         isAdmin=true;
         showScreen('screen-admin');
       } else {
-        // 社員名からEMPSを検索
         currentEmp=EMPS.find(e=>e.name===empName);
         isAdmin=false;
         setupPunchScreen();
@@ -545,6 +611,7 @@ async function doLogin(){
       }
     } else {
       errEl.style.display='block';
+      localStorage.removeItem('bhk_login'); // 認証失敗したら保存情報を削除
     }
   } catch(e) {
     showToast('通訊錯誤，請重試');
@@ -556,10 +623,14 @@ async function doLogin(){
 
 function doLogout(){
   currentEmp=null;isAdmin=false;
-  punchState={inTime:null,outTime:null,onBreak:false,breakStart:0,totalBreak:0,loc:null};
-  document.getElementById('login-emp-sel').value='';
-  document.getElementById('login-pass').value='';
+  punchState={inTime:null,outTime:null,onBreak:false,breakStart:0,totalBreak:0,loc:null,otApproved:false,lateOutReason:''};
   document.getElementById('login-error').style.display='none';
+  // 記憶チェックがオンの場合はフォームをそのまま残す（次回自動ログイン用）
+  const saved=localStorage.getItem('bhk_login');
+  if(!saved){
+    document.getElementById('login-emp-sel').value='';
+    document.getElementById('login-pass').value='';
+  }
   showScreen('screen-login');
 }
 
@@ -633,6 +704,7 @@ function punchIn(){
   document.getElementById('main-btn-in').disabled=true;
   document.getElementById('main-btn-brk').disabled=false;
   document.getElementById('main-btn-out').disabled=false;
+  document.getElementById('main-btn-ot').disabled=false;
 
   const r=RULES[currentEmp.type];
   const lateMin=total-r.start;
@@ -647,6 +719,8 @@ function punchIn(){
     sb.className='status-box ok';
     sb.textContent='上班打卡完成：'+timeStr+'　工作地點：'+punchState.loc;
   }
+  // 出勤後に残業申請ボタンを表示
+  document.getElementById('ot-apply-btn-wrap').classList.remove('hidden');
   saveToSheet('punchIn', {emp:currentEmp.name, time:timeStr, loc:punchState.loc, late:lateMin>1?lateMin:0});
 }
 
@@ -666,25 +740,52 @@ function punchBreak(){
 function punchOut(){
   const d=new Date();
   const total=d.getHours()*60+d.getMinutes();
+  const r=RULES[currentEmp.type];
+  const otMin=total-r.end;
+
+  // 規定時間後かつ残業未承認の場合は理由記入を要求
+  if(otMin>0 && !punchState.otApproved){
+    document.getElementById('late-out-wrap').classList.remove('hidden');
+    document.getElementById('late-out-wrap').scrollIntoView({behavior:'smooth'});
+    document.getElementById('main-status').className='status-box warn';
+    document.getElementById('main-status').textContent='⚠ 已超過下班時間，請填寫原因後才能完成下班打卡';
+    return; // 理由記入まで退勤完了しない
+  }
+
+  completePunchOut();
+}
+
+function completePunchOut(){
+  const d=new Date();
+  const total=d.getHours()*60+d.getMinutes();
   punchState.outTime={h:d.getHours(),m:d.getMinutes(),total};
   document.getElementById('main-btn-brk').disabled=true;
   document.getElementById('main-btn-out').disabled=true;
+  document.getElementById('main-btn-ot').disabled=true;
 
   const r=RULES[currentEmp.type];
   const workMin=total-punchState.inTime.total-punchState.totalBreak;
-  const otMin=total-r.end;
   const timeStr=pad(d.getHours())+':'+pad(d.getMinutes());
   const sb=document.getElementById('main-status');
 
-  if(otMin>30){
-    sb.className='status-box warn';
-    sb.textContent='下班打卡：'+timeStr+'　⚠ 超時'+otMin+'分鐘，請填寫報告書';
-    document.getElementById('ot-report-wrap').classList.remove('hidden');
-  } else {
-    sb.className='status-box ok';
-    sb.textContent='下班打卡完成：'+timeStr+'　實際工時：'+Math.floor(workMin/60)+'時'+workMin%60+'分';
-  }
-  saveToSheet('punchOut', {emp:currentEmp.name, time:timeStr, workMin, ot:otMin>30?otMin:0});
+  sb.className='status-box ok';
+  sb.textContent='下班打卡完成：'+timeStr+'　實際工時：'+Math.floor(workMin/60)+'時'+workMin%60+'分';
+  saveToSheet('punchOut', {emp:currentEmp.name, time:timeStr, workMin, ot:0, lateReason:punchState.lateOutReason||''});
+}
+
+function submitLateOutReason(){
+  const reason=document.getElementById('late-out-reason').value.trim();
+  if(!reason){showToast('請填寫下班遲到原因');return;}
+  punchState.lateOutReason=reason;
+  document.getElementById('late-out-wrap').classList.add('hidden');
+  // 理由をGASに保存
+  saveToSheet('report',{
+    emp:currentEmp.name,
+    type:'lateOut',
+    reason:reason,
+    date:today.toISOString().split('T')[0]
+  });
+  completePunchOut();
 }
 
 function submitReport(type){
@@ -694,6 +795,44 @@ function submitReport(type){
   const wrap=document.getElementById(type==='late'?'late-report-wrap':'ot-report-wrap');
   wrap.innerHTML='<div style="background:#EAF3DE;border-radius:8px;padding:12px;font-size:13px;color:#27500A;font-weight:600;text-align:center;margin-top:8px">報告書已提交，管理員將收到通知。</div>';
   saveToSheet('report', {emp:currentEmp.name, type, reason:val});
+}
+
+// ===== 残業申請 =====
+function showOtApply(){
+  document.getElementById('ot-apply-wrap').classList.remove('hidden');
+  document.getElementById('ot-apply-btn').style.display='none';
+  // デフォルト時間を規定退勤+30分に設定
+  const r=RULES[currentEmp.type];
+  const endH=Math.floor(r.end/60);
+  const endM=r.end%60;
+  const defH=endH+(endM+30>=60?1:0);
+  const defM=(endM+30)%60;
+  document.getElementById('ot-apply-time').value=pad(defH)+':'+pad(defM);
+}
+
+function cancelOtApply(){
+  document.getElementById('ot-apply-wrap').classList.add('hidden');
+  document.getElementById('ot-apply-btn').style.display='block';
+}
+
+async function submitOtApply(){
+  const time=document.getElementById('ot-apply-time').value;
+  const reason=document.getElementById('ot-apply-reason').value.trim();
+  if(!time){showToast('請輸入預計退勤時間');return;}
+  if(!reason){showToast('請輸入超時原因');return;}
+
+  // GASに残業申請を送信（自動退勤フラグをOFFにする）
+  await saveToSheet('otApply', {
+    emp: currentEmp.name,
+    expectedOut: time,
+    reason: reason
+  });
+
+  // UI更新
+  document.getElementById('ot-apply-wrap').classList.add('hidden');
+  document.getElementById('ot-apply-done').classList.remove('hidden');
+  document.getElementById('ot-apply-btn-wrap').classList.remove('hidden');
+  showToast('超時申請已提交');
 }
 
 // ===== Google Sheets 送信 =====
@@ -850,6 +989,33 @@ async function uploadScheduleToSheet(csvText, fileName){
     showToast('排班表上載成功');
   } catch(err) {
     showToast('上載失敗，請重試');
+  }
+}
+
+// ===== 殘業申請 =====
+function showOtApply(){
+  document.getElementById('ot-apply-wrap').classList.remove('hidden');
+  document.getElementById('ot-apply-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+async function submitOtApply(){
+  const reason=document.getElementById('ot-apply-reason').value.trim();
+  if(!reason){showToast('請輸入殘業原因');return;}
+  const d=new Date();
+  const timeStr=pad(d.getHours())+':'+pad(d.getMinutes());
+  try{
+    await saveToSheet('otApply',{
+      emp:currentEmp.name,
+      time:timeStr,
+      reason:reason,
+      date:today.toISOString().split('T')[0]
+    });
+    punchState.otApproved=true; // 申請送信後は一時的に承認フラグを立てる（GAS側で最終判断）
+    document.getElementById('ot-apply-wrap').innerHTML=
+      '<div style="background:#EAF3DE;border-radius:8px;padding:12px;font-size:13px;color:#27500A;font-weight:600;text-align:center;margin-top:8px">殘業申請已提交，管理員將收到通知。<br>如獲批准，系統將不會自動退勤。</div>';
+    showToast('殘業申請已提交');
+  }catch(e){
+    showToast('提交失敗，請重試');
   }
 }
 
