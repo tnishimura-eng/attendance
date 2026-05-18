@@ -437,10 +437,59 @@
           <div class="alert-desc">遲到12分鐘（今日）— 遲到報告書未提交</div>
           <button class="alert-btn" onclick="showToast('催促通知已發送')">發送催促通知</button>
         </div>
-        <div class="alert-item">
-          <div class="alert-name">Ng Yuenchong</div>
-          <div class="alert-desc">超時38分鐘（今日）— 超時報告書未提交</div>
-          <button class="alert-btn" onclick="showToast('催促通知已發送')">發送催促通知</button>
+      </div>
+
+      <div class="card">
+        <div class="sec-title">手動處理</div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">選擇員工</label>
+          <select id="admin-emp-sel" class="login-select" style="margin-bottom:0;font-size:14px">
+            <option value="">-- 請選擇 --</option>
+            <option value="Nishimura Takuya">Nishimura Takuya</option>
+            <option value="Ma Shanni">Ma Shanni</option>
+            <option value="Law Kayan">Law Kayan</option>
+            <option value="Ng Sinhang">Ng Sinhang</option>
+            <option value="Ng Yuenchong">Ng Yuenchong</option>
+            <option value="Ku Heiyi">Ku Heiyi</option>
+            <option value="Li Laiman">Li Laiman</option>
+            <option value="Lo Hoiyu">Lo Hoiyu</option>
+          </select>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">日期</label>
+          <input type="date" id="admin-date-sel" class="login-select" style="margin-bottom:0;font-size:14px">
+        </div>
+
+        <!-- SL/NL ボタン -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <button onclick="adminSetLeave('SL')" style="padding:12px;border-radius:8px;border:none;background:#1D9E75;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+            🤒 病假（SL）<br><span style="font-size:10px;font-weight:400">出勤日數計算</span>
+          </button>
+          <button onclick="adminSetLeave('NL')" style="padding:12px;border-radius:8px;border:none;background:#D85A30;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+            ❌ 無薪假（NL）<br><span style="font-size:10px;font-weight:400">缺勤不計算</span>
+          </button>
+        </div>
+
+        <!-- 打刻修正 -->
+        <div id="punch-fix-area">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">打卡時間修正</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <label style="font-size:11px;color:var(--text2)">上班時間</label>
+              <input type="time" id="admin-in-time" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text)">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2)">下班時間</label>
+              <input type="time" id="admin-out-time" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text)">
+            </div>
+          </div>
+          <div style="margin-bottom:8px">
+            <label style="font-size:11px;color:var(--text2)">工作地點</label>
+            <input type="text" id="admin-loc" placeholder="辦公室 / 在家工作 / FS01 ..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text)">
+          </div>
+          <button onclick="adminFixPunch()" style="width:100%;padding:12px;border-radius:8px;border:none;background:#185FA5;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+            ✏️ 修正打卡記錄
+          </button>
         </div>
       </div>
     </div>
@@ -1024,6 +1073,41 @@ async function submitOtApply(){
     showToast('殘業申請已提交，自動退勤取消');
   }catch(e){
     showToast('提交失敗，請重試');
+  }
+}
+
+// ===== 管理者手動処理 =====
+async function adminSetLeave(type) {
+  const emp = document.getElementById('admin-emp-sel').value;
+  const date = document.getElementById('admin-date-sel').value;
+  if (!emp) { showToast('請選擇員工'); return; }
+  if (!date) { showToast('請選擇日期'); return; }
+
+  const labels = { 'SL': '病假（出勤日數計算）', 'NL': '無薪假（缺勤）' };
+  try {
+    await saveToSheet('adminLeave', { emp, date, leaveType: type });
+    showToast(emp + ' ' + date + ' 已設定為' + labels[type]);
+  } catch(e) {
+    showToast('處理失敗，請重試');
+  }
+}
+
+async function adminFixPunch() {
+  const emp = document.getElementById('admin-emp-sel').value;
+  const date = document.getElementById('admin-date-sel').value;
+  const inTime = document.getElementById('admin-in-time').value;
+  const outTime = document.getElementById('admin-out-time').value;
+  const loc = document.getElementById('admin-loc').value || '辦公室';
+
+  if (!emp) { showToast('請選擇員工'); return; }
+  if (!date) { showToast('請選擇日期'); return; }
+  if (!inTime && !outTime) { showToast('請輸入上班或下班時間'); return; }
+
+  try {
+    await saveToSheet('adminPunchFix', { emp, date, inTime, outTime, loc });
+    showToast(emp + ' ' + date + ' 打卡記錄已修正');
+  } catch(e) {
+    showToast('修正失敗，請重試');
   }
 }
 
