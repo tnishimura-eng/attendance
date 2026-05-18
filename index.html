@@ -274,10 +274,14 @@
 
       <!-- 殘業申請 -->
       <div id="ot-apply-wrap" class="hidden">
-        <div class="report-card ot">
-          <label>殘業申請（請在下班前提交，管理員將收到通知）</label>
-          <textarea id="ot-apply-reason" placeholder="請輸入殘業原因及預計完成時間..."></textarea>
-          <button onclick="submitOtApply()">提交殘業申請</button>
+        <div class="report-card ot" style="background:#F5F3FF;border-left-color:#7C3AED">
+          <label style="color:#5B21B6">殘業申請（提交後自動退勤將取消）</label>
+          <div style="font-size:11px;color:#6D28D9;margin-bottom:10px">提交後當日自動退勤將關閉，請自行打退勤卡。</div>
+          <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">殘業原因</label>
+          <textarea id="ot-apply-reason" placeholder="請輸入殘業原因..." style="margin-bottom:10px;border-color:#C4B5FD"></textarea>
+          <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">預計退勤時間</label>
+          <input type="time" id="ot-apply-time" style="width:100%;padding:10px;border:1px solid #C4B5FD;border-radius:8px;font-size:14px;background:#fff;color:var(--text);margin-bottom:10px">
+          <button onclick="submitOtApply()" style="background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:12px;width:100%;font-size:14px;font-weight:600;cursor:pointer">提交殘業申請</button>
         </div>
       </div>
 
@@ -1000,7 +1004,9 @@ function showOtApply(){
 
 async function submitOtApply(){
   const reason=document.getElementById('ot-apply-reason').value.trim();
+  const otTime=document.getElementById('ot-apply-time').value;
   if(!reason){showToast('請輸入殘業原因');return;}
+  if(!otTime){showToast('請輸入預計退勤時間');return;}
   const d=new Date();
   const timeStr=pad(d.getHours())+':'+pad(d.getMinutes());
   try{
@@ -1008,12 +1014,14 @@ async function submitOtApply(){
       emp:currentEmp.name,
       time:timeStr,
       reason:reason,
+      plannedOut:otTime,
       date:today.toISOString().split('T')[0]
     });
-    punchState.otApproved=true; // 申請送信後は一時的に承認フラグを立てる（GAS側で最終判断）
+    // 申請送信後は即座に自動退勤をOFF
+    punchState.otApproved=true;
     document.getElementById('ot-apply-wrap').innerHTML=
-      '<div style="background:#EAF3DE;border-radius:8px;padding:12px;font-size:13px;color:#27500A;font-weight:600;text-align:center;margin-top:8px">殘業申請已提交，管理員將收到通知。<br>如獲批准，系統將不會自動退勤。</div>';
-    showToast('殘業申請已提交');
+      '<div style="background:#F5F3FF;border-radius:8px;padding:12px;font-size:13px;color:#5B21B6;font-weight:600;text-align:center;margin-top:8px">✓ 殘業申請已提交<br><span style="font-weight:400;font-size:12px">自動退勤已取消，請於 '+otTime+' 前自行打退勤卡</span></div>';
+    showToast('殘業申請已提交，自動退勤取消');
   }catch(e){
     showToast('提交失敗，請重試');
   }
